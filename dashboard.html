@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analyse de parties d'échecs Lichess</title>
+<style>
+:root{--bg:#fcfcfb;--card:#f1efe8;--ink:#0b0b0b;--ink2:#52514e;--grid:#e1e0d9;--blue:#2a78d6;--grey:#c3c2b7}
+@media (prefers-color-scheme: dark){:root{--bg:#1a1a19;--card:#262624;--ink:#f0efec;--ink2:#c3c2b7;--grid:#2c2c2a;--blue:#3987e5;--grey:#898781}}
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:24px;line-height:1.5}
+main{max-width:980px;margin:0 auto}
+h1{font-size:22px;font-weight:500;margin:0 0 4px}
+h2{font-size:14px;font-weight:500;color:var(--ink2);margin:0 0 8px}
+p.sub{color:var(--ink2);font-size:14px;margin:0 0 20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px}
+.card{background:var(--card);border-radius:8px;padding:14px 16px}
+.card .l{font-size:13px;color:var(--ink2)}.card .v{font-size:24px;font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:28px}
+.box{position:relative;height:280px}
+section{margin-bottom:8px}
+@media (max-width:520px){.grid{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>Analyse de parties d'échecs Lichess</h1>
+<p class="sub">Prédire si les Blancs gagnent à partir du classement, de la cadence et de la famille d'ouverture.</p>
+<div class="cards" id="cards"></div>
+<div class="grid">
+<section><h2>Victoires des Blancs selon l'écart de classement</h2><div class="box"><canvas id="c1"></canvas></div></section>
+<section><h2>Précision des modèles (jeu de test)</h2><div class="box"><canvas id="c2"></canvas></div></section>
+<section><h2>Importance des variables (forêt aléatoire)</h2><div class="box"><canvas id="c3"></canvas></div></section>
+<section><h2>Ouvertures : extrêmes (100 parties minimum)</h2><div class="box"><canvas id="c4"></canvas></div></section>
+<section><h2>Façon dont les parties se terminent</h2><div class="box"><canvas id="c5"></canvas></div></section>
+</div></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const D = {"n_parties": 19113, "part_nulles": 0.04646052425051012, "taux_blancs": 0.5237311385459533, "acc_base": 0.5237311385459533, "modeles": [{"nom": "Régression logistique", "acc": 0.6518518518518519, "auc": 0.7171097734959071, "acc_cv": 0.6510836762688614}, {"nom": "Forêt aléatoire", "acc": 0.6375857338820302, "auc": 0.7066686903896894, "acc_cv": 0.6329218106995885}], "tranches": {"labels": ["(-2000, -300]", "(-300, -100]", "(-100, -25]", "(-25, 25]", "(25, 100]", "(100, 300]", "(300, 2000]"], "taux": [17.7, 33.1, 46.1, 51.9, 57.8, 70.9, 85.1], "parties": [1607, 3196, 2712, 2777, 2755, 3432, 1746]}, "ouvertures": {"labels": ["Van't Kruijs Opening", "Queen's Pawn Game", "Sicilian Defense: Old Sicilian", "Indian Game", "Sicilian Defense: Bowdler Attack", "Scandinavian Defense", "Sicilian Defense", "King's Pawn Game: Wayward Queen Attack", "Queen's Gambit Accepted: Old Variation", "Queen's Gambit Declined", "French Defense: Normal Variation", "Scandinavian Defense: Mieses-Kotroc Variation", "Philidor Defense #3", "Philidor Defense", "Queen's Gambit Refused: Marshall Defense", "Queen's Pawn"], "taux": [35.8, 38.8, 39.6, 41.2, 43.0, 43.0, 43.1, 46.4, 58.7, 59.5, 62.9, 63.9, 64.8, 65.6, 66.9, 68.5], "parties": [327, 129, 144, 165, 277, 207, 334, 153, 104, 111, 116, 241, 179, 122, 124, 124]}, "importances": {"labels": ["rating_diff", "black_rating", "white_rating", "base_minutes", "increment_s", "rated", "eco_C", "eco_B"], "valeurs": [0.41, 0.215, 0.211, 0.058, 0.055, 0.012, 0.01, 0.01]}, "fins": {"labels": ["resign", "mate", "outoftime", "draw"], "valeurs": [10695, 5974, 1598, 846]}};
+const css = getComputedStyle(document.documentElement);
+const blue = css.getPropertyValue('--blue').trim(), grey = css.getPropertyValue('--grey').trim();
+const ink = css.getPropertyValue('--ink2').trim(), grid = css.getPropertyValue('--grid').trim();
+Chart.defaults.color = ink; Chart.defaults.font.size = 12;
+const pct = v => v + ' %';
+const best = D.modeles.reduce((a, b) => a.acc > b.acc ? a : b);
+const fmt = (x, n) => x.toLocaleString('fr-FR', {maximumFractionDigits: n});
+document.getElementById('cards').innerHTML = [
+  ['Parties analysées', fmt(D.n_parties, 0)],
+  ['Parties nulles', fmt(D.part_nulles * 100, 1) + ' %'],
+  ['Victoires des Blancs (hors nulles)', fmt(D.taux_blancs * 100, 1) + ' %'],
+  ['Meilleur modèle', best.nom + ' : ' + fmt(best.acc * 100, 1) + ' %'],
+  ['Gain sur le modèle de base', '+' + fmt((best.acc - D.acc_base) * 100, 1) + ' pts']
+].map(c => '<div class="card"><div class="l">' + c[0] + '</div><div class="v">' + c[1] + '</div></div>').join('');
+const ax = (o) => Object.assign({grid: {color: grid}, border: {display: false}}, o || {});
+const bar = (id, labels, data, colors, opts) => new Chart(document.getElementById(id), {
+  type: 'bar',
+  data: {labels: labels, datasets: [{data: data, backgroundColor: colors, borderRadius: 4, maxBarThickness: 24}]},
+  options: Object.assign({responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}}, opts)
+});
+bar('c1', D.tranches.labels, D.tranches.taux, blue, {
+  plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => pct(c.parsed.y) + ' (' + D.tranches.parties[c.dataIndex] + ' parties)'}}},
+  scales: {x: ax({grid: {display: false}, title: {display: true, text: 'Elo Blancs - Elo Noirs'}}), y: ax({min: 0, max: 100, ticks: {callback: pct}})}
+});
+const noms = ['Classe majoritaire'].concat(D.modeles.map(m => m.nom));
+const accs = [D.acc_base].concat(D.modeles.map(m => m.acc)).map(v => Math.round(v * 1000) / 10);
+bar('c2', noms, accs, [grey].concat(D.modeles.map(() => blue)), {
+  plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => pct(c.parsed.y)}}},
+  scales: {x: ax({grid: {display: false}}), y: ax({min: 0, max: 100, ticks: {callback: pct}})}
+});
+bar('c3', D.importances.labels, D.importances.valeurs, blue, {
+  indexAxis: 'y',
+  scales: {x: ax({min: 0}), y: ax({grid: {display: false}})}
+});
+bar('c4', D.ouvertures.labels, D.ouvertures.taux, blue, {
+  indexAxis: 'y',
+  plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => pct(c.parsed.x) + ' (' + D.ouvertures.parties[c.dataIndex] + ' parties)'}}},
+  scales: {x: ax({min: 0, max: 100, ticks: {callback: pct}}), y: ax({grid: {display: false}, ticks: {font: {size: 10}}})}
+});
+bar('c5', D.fins.labels, D.fins.valeurs, blue, {
+  scales: {x: ax({grid: {display: false}}), y: ax({min: 0})}
+});
+</script></body></html>

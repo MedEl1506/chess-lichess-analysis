@@ -1,0 +1,56 @@
+Données chargées : 20058 parties, 16 colonnes
+Colonnes : game_id, rated, start_time, end_time, turns, victory_status, winner, time_increment, white_id, white_rating, black_id, black_rating, moves, opening_eco, opening_name, opening_ply
+
+Valeurs manquantes au total : 0
+Parties en double supprimées : 945 -> 19113 parties conservées
+
+Résultat des parties :
+winner
+white    9545
+black    8680
+draw      888
+Part de parties nulles : 4.6% (retirées pour la prédiction)
+
+Victoires des Blancs (hors nulles) : 52.4%
+
+Taux de victoire des Blancs selon (Elo Blancs - Elo Noirs) :
+                taux  parties
+rating_diff                  
+(-2000, -300]  0.177     1607
+(-300, -100]   0.331     3196
+(-100, -25]    0.461     2712
+(-25, 25]      0.519     2777
+(25, 100]      0.578     2755
+(100, 300]     0.709     3432
+(300, 2000]    0.851     1746
+
+Ouvertures jouées au moins 100 fois (taux de victoire des Blancs) :
+Les 5 plus favorables aux Noirs :
+                                   taux  parties
+opening_name                                    
+Van't Kruijs Opening              0.358      327
+Queen's Pawn Game                 0.388      129
+Sicilian Defense: Old Sicilian    0.396      144
+Indian Game                       0.412      165
+Sicilian Defense: Bowdler Attack  0.430      277
+Les 5 plus favorables aux Blancs :
+                                                taux  parties
+opening_name                                                 
+Scandinavian Defense: Mieses-Kotroc Variation  0.639      241
+Philidor Defense #3                            0.648      179
+Philidor Defense                               0.656      122
+Queen's Gambit Refused: Marshall Defense       0.669      124
+Queen's Pawn                                   0.685      124
+
+Résultats (jeu de test = 20 % des parties) :
+Modèle                   Précision     AUC  Précision CV
+Classe majoritaire           0.524   0.500             -
+Régression logistique        0.652   0.717         0.651
+Forêt aléatoire              0.638   0.707         0.633
+
+Variables les plus importantes (forêt aléatoire) :
+rating_diff     0.410
+black_rating    0.215
+white_rating    0.211
+base_minutes    0.058
+increment_s     0.055
